@@ -8,7 +8,7 @@ import React from "react";
 import ChatHistoryList from "./ChatHistoryList";
 import { ChatHistoryLoadingState, historyDeleteAll } from "../../api";
 
-interface ChatHistoryPanelProps {
+interface ChatHistoryPanelProps{
 
 }
 
@@ -21,7 +21,7 @@ const commandBarStyle: ICommandBarStyles = {
         padding: '0',
         display: 'flex',
         justifyContent: 'center',
-        backgroundColor: 'transparent'
+        backgroundColor: 'transparent' 
     },
 };
 

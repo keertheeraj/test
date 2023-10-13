@@ -14,7 +14,7 @@ load_dotenv()
 
 app = Flask(__name__, static_folder="static")
 
-# Static Files
+
 @app.route("/")
 def index():
     return app.send_static_file("index.html")
@@ -27,11 +27,20 @@ def favicon():
 def assets(path):
     return send_from_directory("static/assets", path)
 
+@app.route("/update-search-index", methods=["POST"])
+def update_search_index():
+    global AZURE_SEARCH_INDEX 
+    data = request.get_json()
+    new_index = data.get("index")
+    AZURE_SEARCH_INDEX = new_index 
+    return jsonify({"message": f"Updated AZURE_SEARCH_INDEX to {new_index}"})
+
+
 
 # ACS Integration Settings
-AZURE_SEARCH_SERVICE = os.environ.get("AZURE_SEARCH_SERVICE")
-AZURE_SEARCH_INDEX = os.environ.get("AZURE_SEARCH_INDEX")
-AZURE_SEARCH_KEY = os.environ.get("AZURE_SEARCH_KEY")
+AZURE_SEARCH_SERVICE = "jman-cognitive-search"
+# AZURE_SEARCH_INDEX ="api-test-001"
+AZURE_SEARCH_KEY = "aNGbKqjRa8fwtvfM3KTGkoFai5PAjj56CX52JaaaZyAzSeDVMW6q"
 AZURE_SEARCH_USE_SEMANTIC_SEARCH = os.environ.get("AZURE_SEARCH_USE_SEMANTIC_SEARCH", "false")
 AZURE_SEARCH_SEMANTIC_SEARCH_CONFIG = os.environ.get("AZURE_SEARCH_SEMANTIC_SEARCH_CONFIG", "default")
 AZURE_SEARCH_TOP_K = os.environ.get("AZURE_SEARCH_TOP_K", 5)
@@ -46,10 +55,10 @@ AZURE_SEARCH_PERMITTED_GROUPS_COLUMN = os.environ.get("AZURE_SEARCH_PERMITTED_GR
 AZURE_SEARCH_STRICTNESS = os.environ.get("AZURE_SEARCH_STRICTNESS", 3)
 
 # AOAI Integration Settings
-AZURE_OPENAI_RESOURCE = os.environ.get("AZURE_OPENAI_RESOURCE")
-AZURE_OPENAI_MODEL = os.environ.get("AZURE_OPENAI_MODEL")
-AZURE_OPENAI_ENDPOINT = os.environ.get("AZURE_OPENAI_ENDPOINT")
-AZURE_OPENAI_KEY = os.environ.get("AZURE_OPENAI_KEY")
+AZURE_OPENAI_RESOURCE = "OpenAI-JMAN"
+AZURE_OPENAI_MODEL = "TestDeployment"
+AZURE_OPENAI_ENDPOINT = "https://openai-jman.openai.azure.com/"
+AZURE_OPENAI_KEY = "2767a4b805064654913a9b85e41a8816"
 AZURE_OPENAI_TEMPERATURE = os.environ.get("AZURE_OPENAI_TEMPERATURE", 0)
 AZURE_OPENAI_TOP_P = os.environ.get("AZURE_OPENAI_TOP_P", 1.0)
 AZURE_OPENAI_MAX_TOKENS = os.environ.get("AZURE_OPENAI_MAX_TOKENS", 1000)
@@ -65,10 +74,10 @@ AZURE_OPENAI_EMBEDDING_KEY = os.environ.get("AZURE_OPENAI_EMBEDDING_KEY")
 SHOULD_STREAM = True if AZURE_OPENAI_STREAM.lower() == "true" else False
 
 # CosmosDB Integration Settings
-AZURE_COSMOSDB_DATABASE = os.environ.get("AZURE_COSMOSDB_DATABASE")
-AZURE_COSMOSDB_ACCOUNT = os.environ.get("AZURE_COSMOSDB_ACCOUNT")
-AZURE_COSMOSDB_CONVERSATIONS_CONTAINER = os.environ.get("AZURE_COSMOSDB_CONVERSATIONS_CONTAINER")
-AZURE_COSMOSDB_ACCOUNT_KEY = os.environ.get("AZURE_COSMOSDB_ACCOUNT_KEY")
+AZURE_COSMOSDB_DATABASE = "db_conversation_history"
+AZURE_COSMOSDB_ACCOUNT = "db-chatapp12"
+AZURE_COSMOSDB_CONVERSATIONS_CONTAINER = "conversations"
+AZURE_COSMOSDB_ACCOUNT_KEY = "fGgeEO9UT8xoXOPPcvvm0VP4itojXTtVDzyTywZQzXh3pl3EvMEk2NGVRw1qQTPZeW2vVc99vc4RACDbCBgISg=="
 
 # Initialize a CosmosDB client with AAD auth and containers
 cosmos_conversation_client = None
@@ -105,7 +114,7 @@ def should_use_data():
 
 def format_as_ndjson(obj: dict) -> str:
     return json.dumps(obj, ensure_ascii=False) + "\n"
-
+ 
 def fetchUserGroups(userToken, nextLink=None):
     # Recursively fetch group membership
     if nextLink:
@@ -116,6 +125,7 @@ def fetchUserGroups(userToken, nextLink=None):
     headers = {
         'Authorization': "bearer " + userToken
     }
+    
     try :
         r = requests.get(endpoint, headers=headers)
         if r.status_code != 200:
@@ -250,17 +260,21 @@ def conversation_with_data(request_body):
     body, headers = prepare_body_headers_with_data(request)
     base_url = AZURE_OPENAI_ENDPOINT if AZURE_OPENAI_ENDPOINT else f"https://{AZURE_OPENAI_RESOURCE}.openai.azure.com/"
     endpoint = f"{base_url}openai/deployments/{AZURE_OPENAI_MODEL}/extensions/chat/completions?api-version={AZURE_OPENAI_PREVIEW_API_VERSION}"
+    print(endpoint,'endddddddd')
+    
+    # endpoint = f"https://openai-jman.openai.azure.com/openai/deployments/TestDeployment/extensions/chat/completions?api-version=2023-06-01-preview"
+    
     history_metadata = request_body.get("history_metadata", {})
-
     if not SHOULD_STREAM:
         r = requests.post(endpoint, headers=headers, json=body)
         status_code = r.status_code
         r = r.json()
         r['history_metadata'] = history_metadata
-
         return Response(format_as_ndjson(r), status=status_code)
     else:
-        return Response(stream_with_data(body, headers, endpoint, history_metadata), mimetype='text/event-stream')
+        resp = Response(stream_with_data(body, headers, endpoint, history_metadata), mimetype='text/event-stream')
+        print(resp.data,'resppppp')
+        return resp
 
 
 def stream_without_data(response, history_metadata={}):
@@ -340,15 +354,20 @@ def conversation_without_data(request_body):
 
 @app.route("/conversation", methods=["GET", "POST"])
 def conversation():
+    print('reqqqqqqqqq',request_body)
     request_body = request.json
     return conversation_internal(request_body)
 
 def conversation_internal(request_body):
+    print(request_body,'bodyyyy')
     try:
         use_data = should_use_data()
         if use_data:
+            print('use data')
             return conversation_with_data(request_body)
         else:
+            print('not use data')
+
             return conversation_without_data(request_body)
     except Exception as e:
         logging.exception("Exception in /conversation")
@@ -359,7 +378,7 @@ def conversation_internal(request_body):
 def add_conversation():
     authenticated_user = get_authenticated_user_details(request_headers=request.headers)
     user_id = authenticated_user['user_principal_id']
-
+    
     ## check request for conversation_id
     conversation_id = request.json.get("conversation_id", None)
 
@@ -616,4 +635,4 @@ def generate_title(conversation_messages):
         return messages[-2]['content']
 
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)

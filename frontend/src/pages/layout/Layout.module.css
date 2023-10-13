@@ -10,10 +10,13 @@
 
 .headerContainer {
     display: flex;
-    justify-content: left;
+    justify-content: space-between;
     align-items: center;
 }
 
+.ButtonsContainer{
+margin-top: 8px;
+}
 .headerTitleContainer {
     display: flex;
     align-items: center;
@@ -30,11 +33,23 @@
     align-items: flex-end;
     color: #242424;
 }
-
+.historyButton {
+    margin-top: 5px;
+  }
+  
 .headerIcon {
-    height: 32px;
-    width: 32px;
+    height: 26px;
+    width: 50px;
     margin-left: 36px;
+}
+
+.dropdownlabel{
+    margin-top: 5px;
+}
+.dropdown {
+    flex: 2; 
+    width:150px;
+    margin-top: -1.5px;
 }
 
 .shareButtonContainer {

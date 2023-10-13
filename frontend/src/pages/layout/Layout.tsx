@@ -1,12 +1,14 @@
 import { Outlet, Link } from "react-router-dom";
 import styles from "./Layout.module.css";
-import Azure from "../../assets/Azure.svg";
+import Azure from "../../assets/test_img-.png";
 import { CopyRegular, ShareRegular } from "@fluentui/react-icons";
 import { CommandBarButton, Dialog, Stack, TextField, ICommandBarStyles, IButtonStyles, DefaultButton  } from "@fluentui/react";
 import { useContext, useEffect, useState } from "react";
 import { HistoryButton, ShareButton } from "../../components/common/Button";
 import { AppStateContext } from "../../state/AppProvider";
 import { CosmosDBStatus } from "../../api";
+import Select from 'react-select';
+
 
 const shareButtonStyles: ICommandBarStyles & IButtonStyles = {
     root: {
@@ -32,12 +34,23 @@ const shareButtonStyles: ICommandBarStyles & IButtonStyles = {
       color: '#FFFFFF',
     },
   };
-
+  {/* changed */}
+  const options = [
+    { value: 'api-test-001', label: 'api-test-001' },
+    { value: 'idx-wipit', label: 'idx-wipit' },
+    { value: 'jman-index-logistics', label: 'jman-index-logistics' },
+    { value: 'hr-resource', label: 'hr-resource' }
+  ]
+  {/* changed */}
 const Layout = () => {
+
+    
     const [isSharePanelOpen, setIsSharePanelOpen] = useState<boolean>(false);
     const [copyClicked, setCopyClicked] = useState<boolean>(false);
     const [copyText, setCopyText] = useState<string>("Copy URL");
     const appStateContext = useContext(AppStateContext)
+    
+    const [selectedSearchIndex, setSelectedSearchIndex] = useState(options[0].value);
 
     const handleShareClick = () => {
         setIsSharePanelOpen(true);
@@ -65,6 +78,26 @@ const Layout = () => {
     }, [copyClicked]);
 
     useEffect(() => {}, [appStateContext?.state.isCosmosDBAvailable.status]);
+ {/* changed */}
+    const handleDropdownChange = (selectedOption:any) => {
+        // Send a POST request to update the search index
+        setSelectedSearchIndex(selectedOption.value);
+        fetch("/update-search-index", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ index: selectedOption.value }),
+        })
+            .then((response) => response.json())
+            .then((data) => {
+                console.log(data.message);
+            })
+            .catch((error) => {
+                console.error("Error updating search index:", error);
+            });
+    };
+     {/* changed */}
 
     return (
         <div className={styles.layout}>
@@ -79,14 +112,24 @@ const Layout = () => {
                             aria-hidden="true"
                         />
                         <Link to="/" className={styles.headerTitleContainer}>
-                            <h1 className={styles.headerTitle}>Azure AI</h1>
+                            <p className={styles.headerTitle}>.</p>
                         </Link>
+        
                     </Stack>
-                    <Stack horizontal tokens={{ childrenGap: 4 }}>
+                    <Stack className={styles.ButtonsContainer} horizontal tokens={{ childrenGap: 4 }}>
+                            {/* changed */}
+                            <p className={styles.dropdownlabel}>Select a knowledge base:</p>
+                            <Select
+                            className={styles.dropdown}
+                            options={options}
+                            onChange={handleDropdownChange} 
+                            />
+
+                            {/* changed */}
                             {(appStateContext?.state.isCosmosDBAvailable?.status !== CosmosDBStatus.NotConfigured) && 
                                 <HistoryButton onClick={handleHistoryClick} text={appStateContext?.state?.isChatHistoryOpen ? "Hide chat history" : "Show chat history"}/>    
                             }
-                            <ShareButton onClick={handleShareClick} />
+                            <ShareButton onClick={handleShareClick}/>
                     </Stack>
 
                 </Stack>
@@ -96,7 +139,7 @@ const Layout = () => {
                 onDismiss={handleSharePanelDismiss}
                 hidden={!isSharePanelOpen}
                 styles={{
-                    
+                 
                     main: [{
                         selectors: {
                           ['@media (min-width: 480px)']: {

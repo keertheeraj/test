@@ -3,12 +3,12 @@ import { CommandBarButton, IconButton, Dialog, DialogType, Stack } from "@fluent
 import { DismissRegular, SquareRegular, ShieldLockRegular, ErrorCircleRegular } from "@fluentui/react-icons";
 
 import ReactMarkdown from "react-markdown";
-import remarkGfm from 'remark-gfm'
+import remarkGfm from 'remark-gfm';
 import rehypeRaw from "rehype-raw";
 import uuid from 'react-uuid';
 
 import styles from "./Chat.module.css";
-import Azure from "../../assets/Azure.svg";
+import Azure from "../../assets/test_img.png";
 
 import {
     ChatMessage,
@@ -86,14 +86,8 @@ const Chat = () => {
     }
     
     const getUserInfoList = async () => {
-        const userInfoList = await getUserInfo();
-        if (userInfoList.length === 0 && window.location.hostname !== "127.0.0.1") {
-            setShowAuthMessage(true);
-        }
-        else {
-            setShowAuthMessage(false);
-        }
-    }
+        setShowAuthMessage(false);
+}
 
     const makeApiRequestWithoutCosmosDB = async (question: string, conversationId?: string) => {
         setIsLoading(true);
@@ -175,7 +169,7 @@ const Chat = () => {
                 setMessages([...messages, ...result.choices[0].messages]);
             }
             
-        } catch ( e )  {
+        } catch ( e ) {
             if (!abortController.signal.aborted) {
                 let errorMessage = "An error occurred. Please try again. If the problem persists, please contact the site administrator.";
                 if (result.error?.message) {
